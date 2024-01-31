@@ -249,6 +249,7 @@ class AmclNode
     ros::NodeHandle nh_;
     ros::NodeHandle private_nh_;
     ros::Publisher pose_pub_;
+    ros::Publisher pose2_pub_;
     ros::Publisher particlecloud_pub_;
     ros::ServiceServer global_loc_srv_;
     ros::ServiceServer nomotion_update_srv_; //to let amcl update samples without requiring motion
@@ -475,6 +476,7 @@ AmclNode::AmclNode() :
   tfl_.reset(new tf2_ros::TransformListener(*tf_));
 
   pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose", 2, true);
+  pose2_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("amcl_pose2", 2, true);
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2, true);
   global_loc_srv_ = nh_.advertiseService("global_localization", 
 					 &AmclNode::globalLocalizationCallback,
@@ -1445,6 +1447,12 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
        */
 
       pose_pub_.publish(p);
+      geometry_msgs::PoseStamped p2;
+      p2.header.frame_id = global_frame_id_;
+      p2.header.stamp = laser_scan->header.stamp;
+      p2.pose.position.x = hyps[max_weight_hyp].pf_pose_mean.v[0];
+      p2.pose.position.y = hyps[max_weight_hyp].pf_pose_mean.v[1];
+      pose2_pub_.publish(p2);
       last_published_pose = p;
 
       ROS_DEBUG("New pose: %6.3f %6.3f %6.3f",
